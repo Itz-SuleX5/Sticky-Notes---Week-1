@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/note.dart';
 import '../providers/notes_provider.dart';
-import 'package:intl/intl.dart';
 
-class NoteCard extends StatelessWidget {
+class NoteCard extends StatefulWidget {
   final Note note;
   final bool isEditing;
 
@@ -15,118 +14,85 @@ class NoteCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final notePosition = note.position?.dy ?? 0;
-    final isNearTop = notePosition < screenHeight * 0.3;
-    final isNearBottom = notePosition > screenHeight * 0.7;
+  State<NoteCard> createState() => _NoteCardState();
+}
 
-    return Positioned(
-      left: note.position?.dx ?? 20,
-      top: note.position?.dy ?? 20,
-      child: GestureDetector(
-        onPanUpdate: isEditing ? (details) {
-          Provider.of<NotesProvider>(context, listen: false)
-              .updateNotePosition(note.id, Offset(
-                (note.position?.dx ?? 0) + details.delta.dx,
-                (note.position?.dy ?? 0) + details.delta.dy,
-              ));
-        } : null,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Transform.rotate(
-              angle: note.rotation ?? 0,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Nota
-                  Container(
-                    width: 200,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: note.color,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 5,
-                          offset: const Offset(3, 3),
-                        ),
-                      ],
+class _NoteCardState extends State<NoteCard> {
+  Offset? _dragOffset;
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.all(8.0),
+          child: Transform.translate(
+            offset: Offset(widget.note.position['dx'], widget.note.position['dy']),
+            child: Transform.rotate(
+              angle: widget.note.rotation,
+              child: Container(
+                width: 200,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: widget.note.completed ? const Color(0xFFB4E4B4) : const Color(0xFFFFE17D),
+                  borderRadius: BorderRadius.circular(8.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          note.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(note.description),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Fecha: ${DateFormat('dd/MM/yyyy').format(note.deadline)}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/tape.png',
+                      width: 60,
+                      height: 30,
                     ),
-                  ),
-                  // Cinta adhesiva
-                  Positioned(
-                    top: -70,
-                    left: 30,
-                    right: 30,
-                    child: Transform.rotate(
-                      angle: 20.0,
-                      child: Image.asset(
-                        'assets/images/white-tape-png-41.png',
-                        height: 60,
-                        fit: BoxFit.fill,
+                    Text(
+                      widget.note.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        decoration: widget.note.completed ? TextDecoration.lineThrough : null,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Botón de eliminar
-            if (isEditing)
-              Positioned(
-                top: isNearBottom ? -20 : null,
-                bottom: isNearBottom ? null : -20,
-                right: -10,
-                child: GestureDetector(
-                  onTap: () {
-                    Provider.of<NotesProvider>(context, listen: false)
-                        .deleteNote(note.id);
-                  },
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 3,
-                          offset: const Offset(1, 1),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.note.description,
+                      style: TextStyle(
+                        decoration: widget.note.completed ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Switch(
+                          value: widget.note.completed,
+                          onChanged: (bool value) {
+                            widget.onUpdate(
+                              widget.note.copyWith(completed: value),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => widget.onDelete(widget.note),
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 } 

@@ -4,61 +4,74 @@ class Note {
   final String id;
   String title;
   String description;
-  DateTime deadline;
-  Color color;
   double rotation;
   Offset position;
+  bool completed;
 
   Note({
     required this.id,
     required this.title,
     required this.description,
-    required this.deadline,
-    required this.color,
     this.rotation = 0.0,
     this.position = Offset.zero,
+    this.completed = false,
   });
+
+  Color get color => completed ? const Color(0xFFB4E4B4) : const Color(0xFFFFE17D);
 
   Note copyWith({
     String? title,
     String? description,
-    DateTime? deadline,
-    Color? color,
     double? rotation,
     Offset? position,
+    bool? completed,
   }) {
     return Note(
       id: this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      deadline: deadline ?? this.deadline,
-      color: color ?? this.color,
       rotation: rotation ?? this.rotation,
       position: position ?? this.position,
+      completed: completed ?? this.completed,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
       'description': description,
-      'deadline': deadline.toIso8601String(),
-      'color': color.value,
+      'color': completed ? '#B4E4B4' : '#FFE17D',
       'rotation': rotation,
       'position': {'dx': position.dx, 'dy': position.dy},
+      'completed': completed,
     };
   }
 
   factory Note.fromJson(Map<String, dynamic> json) {
+    final position = json['position'] as Map<String, dynamic>;
     return Note(
-      id: json['id'],
+      id: json['id'].toString(),
       title: json['title'],
       description: json['description'],
-      deadline: DateTime.parse(json['deadline']),
-      color: Color(json['color']),
-      rotation: json['rotation'],
-      position: Offset(json['position']['dx'], json['position']['dy']),
+      rotation: json['rotation'].toDouble(),
+      position: Offset(
+        position['dx'].toDouble(),
+        position['dy'].toDouble(),
+      ),
+      completed: json['completed'] ?? false,
     );
+  }
+
+  // Método para convertir a JSON para almacenamiento local
+  Map<String, dynamic> toLocalJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'color': completed ? '#B4E4B4' : '#FFE17D',
+      'rotation': rotation,
+      'position': {'dx': position.dx, 'dy': position.dy},
+      'completed': completed,
+    };
   }
 } 

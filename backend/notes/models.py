@@ -10,7 +10,7 @@ class Note(models.Model):
     description = models.TextField()
     deadline = models.DateTimeField(null=True, blank=True)
     completed = models.BooleanField(default=False)
-    position = models.JSONField()  # Almacenará {'dx': float, 'dy': float}
+    position = models.JSONField()  
     rotation = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -20,7 +20,7 @@ class Note(models.Model):
         return self.GREEN_COLOR if self.completed else self.YELLOW_COLOR
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # Si es una nueva nota
+        if not self.pk:  
             self.position = {
                 'dx': random.uniform(20.0, 300.0),
                 'dy': random.uniform(20.0, 300.0)
