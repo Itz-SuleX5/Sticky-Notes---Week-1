@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, Typography, IconButton, Switch, Box } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Note } from '../types/Note';
@@ -14,6 +14,10 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onUpdate, onDelete }) 
   const [position, setPosition] = useState({ x: note.position.dx, y: note.position.dy });
   const dragStart = useRef({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setPosition({ x: note.position.dx, y: note.position.dy });
+  }, [note.position.dx, note.position.dy]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -35,17 +39,26 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onUpdate, onDelete }) 
   const handleMouseUp = async () => {
     if (isDragging) {
       setIsDragging(false);
-      await onUpdate(note.id, {
-        position: {
-          dx: position.x,
-          dy: position.y
-        }
-      });
+      try {
+        await onUpdate(note.id, {
+          position: {
+            dx: position.x,
+            dy: position.y
+          },
+          rotation: note.rotation
+        });
+      } catch (error) {
+        setPosition({ x: note.position.dx, y: note.position.dy });
+      }
     }
   };
 
   const handleToggleComplete = async () => {
-    await onUpdate(note.id, { completed: !note.completed });
+    await onUpdate(note.id, {
+      completed: !note.completed,
+      position: note.position,
+      rotation: note.rotation
+    });
   };
 
   const handleDelete = async () => {
@@ -91,7 +104,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onUpdate, onDelete }) 
             {note.title}
           </Typography>
           <Typography variant="body2">
-            {note.content}
+            {note.description}
           </Typography>
         </CardContent>
       </Card>

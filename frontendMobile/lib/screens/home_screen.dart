@@ -17,24 +17,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
           color: Color(0xFFD2B48C),
         ),
-        child: Stack(
-          children: [
-            Consumer<NotesProvider>(
-              builder: (context, notesProvider, child) {
-                return Stack(
-                  children: notesProvider.notes
-                      .map((note) => NoteCard(
-                            note: note,
-                            isEditing: isEditing,
-                          ))
-                      .toList(),
+        child: Consumer<NotesProvider>(
+          builder: (context, notesProvider, child) {
+            return Stack(
+              children: notesProvider.notes.map((note) {
+                return NoteCard(
+                  key: ValueKey(note.id),
+                  note: note,
+                  isEditing: !isEditing,
+                  onUpdate: (updatedNote) {
+                    notesProvider.updateNote(updatedNote);
+                  },
+                  onDelete: (noteToDelete) {
+                    notesProvider.deleteNote(noteToDelete.id);
+                  },
                 );
-              },
-            ),
-          ],
+              }).toList(),
+            );
+          },
         ),
       ),
       floatingActionButton: Column(
@@ -50,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Icon(isEditing ? Icons.check : Icons.edit),
             backgroundColor: isEditing ? Colors.orange : Colors.blue,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           FloatingActionButton(
             onPressed: () => _showAddNoteDialog(context),
             heroTag: 'add',

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ class NotesProvider with ChangeNotifier {
   static const String _storageKey = 'notes';
   SharedPreferences? _prefs;
   bool _isInitialized = false;
+  Timer? _syncTimer;
   
   // Color actual para todas las notas
   static const Color noteColor = Color(0xFFFFE17D);
@@ -19,12 +21,22 @@ class NotesProvider with ChangeNotifier {
     _init();
   }
 
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _init() async {
     if (!_isInitialized) {
       _prefs = await SharedPreferences.getInstance();
       await _loadLocalNotes();
-      _syncWithBackend();
+      await _syncWithBackend();
       _isInitialized = true;
+      
+      _syncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        _syncWithBackend();
+      });
     }
   }
 
@@ -53,8 +65,7 @@ class NotesProvider with ChangeNotifier {
         final List<dynamic> decodedNotes = json.decode(response.body);
         final backendNotes = decodedNotes.map((note) => Note.fromJson(note)).toList();
         
-        // Sincronizar notas locales con el backend
-        _notes = _mergeNotes(_notes, backendNotes);
+        _notes = backendNotes;
         await _saveLocalNotes();
         notifyListeners();
       }
@@ -63,33 +74,13 @@ class NotesProvider with ChangeNotifier {
     }
   }
 
-  List<Note> _mergeNotes(List<Note> localNotes, List<Note> backendNotes) {
-    final Map<String, Note> mergedNotes = {};
-    
-    // Agregar notas del backend
-    for (var note in backendNotes) {
-      mergedNotes[note.id] = note;
-    }
-    
-    // Actualizar con notas locales más recientes
-    for (var note in localNotes) {
-      if (!mergedNotes.containsKey(note.id)) {
-        mergedNotes[note.id] = note;
-      }
-    }
-    
-    return mergedNotes.values.toList();
-  }
-
   Future<void> addNote(String title, String description) async {
-    // Generar posición aleatoria
     final random = math.Random();
     final position = {
-      'dx': 20 + random.nextDouble() * 200, // Entre 20 y 220
-      'dy': 20 + random.nextDouble() * 300, // Entre 20 y 320
+      'dx': 20 + random.nextDouble() * 200,
+      'dy': 20 + random.nextDouble() * 300,
     };
     
-    // Generar rotación aleatoria entre -0.1 y 0.1 radianes
     final rotation = (random.nextDouble() * 0.2) - 0.1;
 
     final noteData = {
@@ -108,10 +99,7 @@ class NotesProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 201) {
-        final newNote = Note.fromJson(json.decode(response.body));
-        _notes.add(newNote);
-        await _saveLocalNotes();
-        notifyListeners();
+        await _syncWithBackend();
       }
     } catch (e) {
       print('Error adding note: $e');
@@ -127,12 +115,7 @@ class NotesProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final index = _notes.indexWhere((n) => n.id == note.id);
-        if (index >= 0) {
-          _notes[index] = note;
-          await _saveLocalNotes();
-          notifyListeners();
-        }
+        await _syncWithBackend();
       }
     } catch (e) {
       print('Error updating note: $e');
@@ -153,9 +136,7 @@ class NotesProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 204) {
-        _notes.removeWhere((note) => note.id == id);
-        await _saveLocalNotes();
-        notifyListeners();
+        await _syncWithBackend();
       }
     } catch (e) {
       print('Error deleting note: $e');

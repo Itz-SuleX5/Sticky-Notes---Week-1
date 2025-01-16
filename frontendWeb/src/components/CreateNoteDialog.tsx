@@ -21,30 +21,48 @@ export const CreateNoteDialog: React.FC<CreateNoteDialogProps> = ({
   onCreate
 }) => {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     
-    const newNote = {
-      title,
-      content,
-      completed: false,
-      position: {
-        dx: Math.random() * (window.innerWidth - 250),
-        dy: Math.random() * (window.innerHeight - 250)
-      },
-      rotation: (Math.random() - 0.5) * 0.2
-    };
+    try {
+      setIsSubmitting(true);
+      const newNote = {
+        title,
+        description,
+        completed: false,
+        position: {
+          dx: Math.random() * (window.innerWidth - 250),
+          dy: Math.random() * (window.innerHeight - 250)
+        },
+        rotation: (Math.random() - 0.5) * 0.2
+      };
 
-    await onCreate(newNote);
-    setTitle('');
-    setContent('');
-    onClose();
+      console.log('Creating note with data:', newNote);
+      await onCreate(newNote);
+      setTitle('');
+      setDescription('');
+      onClose();
+    } catch (error) {
+      console.error('Error creating note:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      setTitle('');
+      setDescription('');
+      onClose();
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
         <DialogTitle>Crear Nueva Nota</DialogTitle>
         <DialogContent>
@@ -56,22 +74,31 @@ export const CreateNoteDialog: React.FC<CreateNoteDialogProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+            disabled={isSubmitting}
           />
           <TextField
             margin="dense"
-            label="Contenido"
+            label="Descripción"
             fullWidth
             multiline
             rows={4}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             required
+            disabled={isSubmitting}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancelar</Button>
-          <Button type="submit" variant="contained" color="primary">
-            Crear
+          <Button onClick={handleClose} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary"
+            disabled={isSubmitting || !title.trim() || !description.trim()}
+          >
+            {isSubmitting ? 'Creando...' : 'Crear'}
           </Button>
         </DialogActions>
       </form>

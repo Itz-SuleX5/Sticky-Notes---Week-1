@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(45deg, #8B4513 0%, #A0522D 50%, #8B4513 100%)',
+        background: '#D2B48C',
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
