@@ -117,7 +117,7 @@ The web application will be available at `http://localhost:3000`
 
 The application is deployed at:
 - Backend: https://sticky-notes-week-1.onrender.com
-- Web: [Your web deployment URL]
+- Web: https://sticky-notes-itzsulex5.netlify.app
 - Mobile: Available through respective app stores (pending)
 
 ## Contributing
